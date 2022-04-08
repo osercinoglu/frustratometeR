@@ -10,6 +10,8 @@ get_os <- function(){
     os <- sysinf['sysname']
     if (os == 'Darwin')
       os <- "osx"
+    if (os == 'windows')
+      os <- "windows"
   } else { ## mystery machine
     os <- .Platform$OS.type
     if (grepl("^darwin", R.version$os))
