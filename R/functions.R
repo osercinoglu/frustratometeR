@@ -11,7 +11,7 @@ get_os <- function(){
     if (os == 'Darwin')
       os <- "osx"
     if (os == 'windows')
-      os <- "windows"
+      os <- "linux"
   } else { ## mystery machine
     os <- .Platform$OS.type
     if (grepl("^darwin", R.version$os))
@@ -259,8 +259,8 @@ complete_backbone <- function(Pdb){
   Completed <- FALSE
   if(!check_backbone_complete(Pdb))
   {
-      system(paste("python3 ", Pdb$scriptsDir, "/MissingAtoms.py ",  Pdb$JobDir, Pdb$PdbBase, ".pdb", sep=""))
-      system(paste("mv ", Pdb$JobDir, Pdb$PdbBase, ".pdb_completed", " ", Pdb$JobDir, Pdb$PdbBase, ".pdb", sep=""))
+      system(paste("bash -c '", "python ", Pdb$scriptsDir, "/MissingAtoms.py ",  Pdb$JobDir, Pdb$PdbBase, ".pdb", "'", sep=""))
+      system(paste("bash -c '", "mv ", Pdb$JobDir, Pdb$PdbBase, ".pdb_completed", " ", Pdb$JobDir, Pdb$PdbBase, ".pdb", "'", sep=""))
       Completed<-TRUE
   }
   return(Completed)
@@ -322,7 +322,7 @@ calculate_frustration <- function(PdbFile = NULL, PdbID = NULL, Chain = NULL, El
     #Get URL and download
     cat("-----------------------------Download files-----------------------------\n")
     pdbURL <- get.pdb(id = PdbID, split = boolsplit, URLonly = TRUE)
-    system(paste("wget --no-check-certificate -P ", tempfolder, pdbURL, " -q --progress=bar:force:noscroll --show-progress", sep = ' '))
+    system(paste("bash -c '", "wget --no-check-certificate -P ", tempfolder, pdbURL, " -q --progress=bar:force:noscroll --show-progress", "'", sep = ' '))
     PdbFile <- paste(tempfolder, "/", PdbID, ".pdb", sep = "")    
   }
   
@@ -347,7 +347,7 @@ calculate_frustration <- function(PdbFile = NULL, PdbID = NULL, Chain = NULL, El
   #Creates JobDir
   JobDir <- paste(ResultsDir, PdbBase, ".done/", sep = "")
   if(!dir.exists(JobDir))  dir.create(JobDir)
-  system(paste("cp ", PdbFile, " ", JobDir, PdbBase, sep = ""))
+  system(paste("bash -c '", "cp ", PdbFile, " ", JobDir, PdbBase, "'", sep = ""))
   setwd(JobDir)
   PdbFile <- paste(JobDir, PdbBase, ".pdb", sep = "")
   
@@ -399,8 +399,8 @@ calculate_frustration <- function(PdbFile = NULL, PdbID = NULL, Chain = NULL, El
   Pdb[["equivalences"]] <- equivalences
   
   cat("-----------------------------Preparing files-----------------------------\n")
-  system(paste("sh ", Pdb$scriptsDir, "/AWSEMFiles/AWSEMTools/PdbCoords2Lammps.sh ", Pdb$PdbBase, " ", Pdb$PdbBase, " ", Pdb$scriptsDir, sep = ""))
-  system(paste("cp ", Pdb$scriptsDir, "/AWSEMFiles/*.dat* ", Pdb$JobDir, sep = ""))
+  system(paste("bash -c '", "sh ", Pdb$scriptsDir, "/AWSEMFiles/AWSEMTools/PdbCoords2Lammps.sh ", Pdb$PdbBase, " ", Pdb$PdbBase, " ", Pdb$scriptsDir, "'", sep = ""))
+  system(paste("bash -c '", "cp ", Pdb$scriptsDir, "/AWSEMFiles/*.dat* ", Pdb$JobDir, "'", sep = ""))
 
   cat("-----------------------------Setting options-----------------------------\n")
   replace_Expr("run\t\t10000", "run\t\t0", paste(Pdb$JobDir, Pdb$PdbBase, ".in", sep = ""))
@@ -413,22 +413,22 @@ calculate_frustration <- function(PdbFile = NULL, PdbID = NULL, Chain = NULL, El
     replace_Expr("4.15 4.15 4.15", paste(Electrostatics_K, Electrostatics_K, Electrostatics_K, sep = " "),
                  paste(Pdb$JobDir, "fix_backbone_coeff.data", sep = ""))
     print("Setting electrostatics...")
-    system(paste("python3 ", Pdb$scriptsDir, "/Pdb2Gro.py ", Pdb$PdbBase, ".pdb ", Pdb$PdbBase, ".pdb.gro; perl ",
-                 Pdb$scriptsDir, "/GenerateChargeFile.pl ", Pdb$PdbBase, ".pdb.gro > ", JobDir, "charge_on_residues.dat", sep = ""))
+    system(paste("bash -c '", "python3 ", Pdb$scriptsDir, "/Pdb2Gro.py ", Pdb$PdbBase, ".pdb ", Pdb$PdbBase, ".pdb.gro; perl ",
+                 Pdb$scriptsDir, "/GenerateChargeFile.pl ", Pdb$PdbBase, ".pdb.gro > ", JobDir, "charge_on_residues.dat", "'", sep = ""))
   }
 
   cat("-----------------------------Calculating-----------------------------\n")
   OperativeSystem <- get_os()
   if(OperativeSystem == "linux"){
-     system(paste("cp ", Pdb$scriptsDir, "/lmp_serial_", SeqDist, "_Linux ", Pdb$JobDir, "; chmod +x lmp_serial_", SeqDist,
-                 "_Linux ; ./lmp_serial_", SeqDist, "_Linux < ", Pdb$PdbBase, ".in", sep = ""))
+     system(paste("bash -c '", "cp ", Pdb$scriptsDir, "/lmp_serial_", SeqDist, "_Linux ", Pdb$JobDir, "; chmod +x lmp_serial_", SeqDist,
+                 "_Linux ; ./lmp_serial_", SeqDist, "_Linux < ", Pdb$PdbBase, ".in", "'", sep = ""))
   }
   else if(OperativeSystem == "osx"){
-    system(paste("cp ", Pdb$scriptsDir, "/lmp_serial_", SeqDist, "_MacOS ", Pdb$JobDir, "; chmod +x lmp_serial_", SeqDist,
-                 "_MacOS ; ./lmp_serial_", SeqDist, "_MacOS < ", Pdb$PdbBase, ".in", sep = ""))
+    system(paste("bash -c '", "cp ", Pdb$scriptsDir, "/lmp_serial_", SeqDist, "_MacOS ", Pdb$JobDir, "; chmod +x lmp_serial_", SeqDist,
+                 "_MacOS ; ./lmp_serial_", SeqDist, "_MacOS < ", Pdb$PdbBase, ".in", "'", sep = ""))
   }
  
-  system(paste("perl ", Pdb$scriptsDir, "/RenumFiles.pl ", Pdb$PdbBase, " ", Pdb$JobDir, " ", Pdb$Mode, sep = "" ))
+  system(paste("bash -c '", "perl ", Pdb$scriptsDir, "/RenumFiles.pl ", Pdb$PdbBase, " ", Pdb$JobDir, " ", Pdb$Mode, "'", sep = "" ))
   
   if(Pdb$Mode == "configurational" | Pdb$Mode == "mutational"){
     XAdens(Pdb)
@@ -437,11 +437,11 @@ calculate_frustration <- function(PdbFile = NULL, PdbID = NULL, Chain = NULL, El
   cat("-----------------------------Reorganization-----------------------------\n")
   Frustration <- paste(Pdb$JobDir, "FrustrationData", sep = "")
   if (!dir.exists(Frustration))  dir.create(Frustration)
-  system(paste("mv *.pdb_", Pdb$Mode, " ", Frustration, sep = ""))
+  system(paste("bash -c '", "mv *.pdb_", Pdb$Mode, " ", Frustration, "'", sep = ""))
   if(Pdb$Mode == "configurational" | Pdb$Mode == "mutational"){
-    system(paste("mv *_", Pdb$Mode, "_5adens ", Frustration, sep = ""))
+    system(paste("bash -c '", "mv *_", Pdb$Mode, "_5adens ", Frustration, sep = ""))
   }
-  system(paste("mv *.pdb ", Frustration, sep = ""))
+  system(paste("bash -c '", "mv *.pdb ", Frustration, "'", sep = ""))
   
   if(Graphics & Mode != "singleresidue"){
     cat("-----------------------------Images-----------------------------\n")
@@ -454,15 +454,15 @@ calculate_frustration <- function(PdbFile = NULL, PdbID = NULL, Chain = NULL, El
   
   if(Visualization & Mode != "singleresidue"){
     cat("-----------------------------Visualizations-----------------------------\n")
-    system(paste("perl ", Pdb$scriptsDir, "/GenerateVisualizations.pl ", Pdb$PdbBase, "_", Pdb$Mode,
-                 ".pdb_auxiliar ", Pdb$PdbBase, " ", gsub(".$", "", Pdb$JobDir), " ", Pdb$Mode, sep = ""))
+    system(paste("bash -c '", "perl ", Pdb$scriptsDir, "/GenerateVisualizations.pl ", Pdb$PdbBase, "_", Pdb$Mode,
+                 ".pdb_auxiliar ", Pdb$PdbBase, " ", gsub(".$", "", Pdb$JobDir), " ", Pdb$Mode, "'", sep = ""))
     VisualizationDir <- paste(Pdb$JobDir, "VisualizationScrips", sep = "")
     if (!dir.exists(VisualizationDir))  dir.create(VisualizationDir)
-    system(paste("cp ", Frustration, "/", Pdb$PdbBase, ".pdb ", VisualizationDir, "/", Pdb$PdbBase, ".pdb", sep = ""))
-    system(paste("mv *_", Pdb$Mode, ".pml ", VisualizationDir, sep = ""))
-    system(paste("mv *_", Pdb$Mode, ".tcl ", VisualizationDir, sep = ""))
-    system(paste("mv *_", Pdb$Mode, ".jml ", VisualizationDir, sep = ""))
-    system(paste("cp ", Pdb$scriptsDir, "/draw_links.py ", VisualizationDir, sep = ""))
+    system(paste("bash -c '", "cp ", Frustration, "/", Pdb$PdbBase, ".pdb ", VisualizationDir, "/", Pdb$PdbBase, ".pdb", "'", sep = ""))
+    system(paste("bash -c '", "mv *_", Pdb$Mode, ".pml ", VisualizationDir, "'", sep = ""))
+    system(paste("bash -c '", "mv *_", Pdb$Mode, ".tcl ", VisualizationDir, "'", sep = ""))
+    system(paste("bash -c '", "mv *_", Pdb$Mode, ".jml ", VisualizationDir, "'", sep = ""))
+    system(paste("bash -c '", "cp ", Pdb$scriptsDir, "/draw_links.py ", VisualizationDir, "'", sep = ""))
   }
   
   cat("\n\n****Storage information****\n")
@@ -473,13 +473,13 @@ calculate_frustration <- function(PdbFile = NULL, PdbID = NULL, Chain = NULL, El
     cat(paste("Visualizations are stored in ", VisualizationDir, "\n", sep = ""))
   
   #Unnecessary files are removed
-  system(paste("ls -F1 > output;", sep = ""))
+  system(paste("bash -c '", "ls -F1 > output;", "'", sep = ""))
   files <- read.table(paste(JobDir, "output", sep = ""), header = F)
   files[,1] <- as.character(files[, 1])
   for(i in seq(1, dim(files)[1])){
   	finalCharacter <- substr(files[i, 1], nchar(files[i, 1]), nchar(files[i, 1]))
   	if(finalCharacter != '/' & finalCharacter != '.'){
-  		system(paste("rm -f ", files[i, 1], sep = ""));
+  		system(paste("bash -c '", "rm -f ", files[i, 1], "'", sep = ""));
   	}
   }
   setwd(tempfolder)
@@ -487,9 +487,9 @@ calculate_frustration <- function(PdbFile = NULL, PdbID = NULL, Chain = NULL, El
   #We delete temporary files
    if(!is.null(Chain))
    {
-   	system(paste("rm -f -R ", tempfolder, "/split_chain", sep = "" ))
+   	system(paste("bash -c '", "rm -f -R ", tempfolder, "/split_chain", "'", sep = "" ))
    }
-   system(paste("rm -f ", tempfolder, "/", PdbID, ".pdb", sep = "" ))
+   system(paste("bash -c '", "rm -f ", tempfolder, "/", PdbID, ".pdb", "'", sep = "" ))
 
   return(Pdb)
 }
@@ -844,15 +844,15 @@ mutate_res <- function(Pdb, Resno, Chain, Split = TRUE, Method = "threading"){
       
       cat("----------------------------Storing-----------------------------\n")
       if(Pdb$Mode == "singleresidue"){
-        system(paste("mv ", Pdb$JobDir, Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".done/FrustrationData/", Pdb$PdbBase, "_", 
-                     Resno, "_", AA, "_", Chain, ".pdb_singleresidue ", Pdb$JobDir, "MutationsData/", sep = ""))
+        system(paste("bash -c '", "mv ", Pdb$JobDir, Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".done/FrustrationData/", Pdb$PdbBase, "_", 
+                     Resno, "_", AA, "_", Chain, ".pdb_singleresidue ", Pdb$JobDir, "MutationsData/", "'", sep = ""))
         frustraTable <- read.table(paste(Pdb$JobDir, "MutationsData/", Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".pdb_singleresidue", sep = ""),
                                    header = T, colClasses = colClasses)
         frustraTable <- frustraTable[frustraTable$ChainRes == Chain & frustraTable$Res == Resno, c(1, 2, 4, 8)]
         write(paste(frustraTable[, 1], frustraTable[, 2], frustraTable[, 3], frustraTable[, 4]), file = FrustraMutFile, append = TRUE)
       }else if(Pdb$Mode == "configurational" | Pdb$Mode == "mutational"){
-        system(paste("mv ", Pdb$JobDir, Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".done/FrustrationData/", Pdb$PdbBase, "_", 
-                     Resno, "_", AA, "_", Chain, ".pdb_", Pdb$Mode, " ", Pdb$JobDir, "MutationsData/", sep = ""))
+        system(paste("bash -c '", "mv ", Pdb$JobDir, Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".done/FrustrationData/", Pdb$PdbBase, "_", 
+                     Resno, "_", AA, "_", Chain, ".pdb_", Pdb$Mode, " ", Pdb$JobDir, "MutationsData/", "'", sep = ""))
         frustraTable <- read.table(paste(Pdb$JobDir, "MutationsData/", Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".pdb_", Pdb$Mode, sep = ""),
                                    header = T, colClasses = colClasses)
         frustraTable <- frustraTable[frustraTable$ChainRes1 == Chain & frustraTable$Res1 == Resno |
@@ -865,8 +865,8 @@ mutate_res <- function(Pdb, Resno, Chain, Split = TRUE, Method = "threading"){
       
       #Unnecessary files are removed
       file.remove(paste(Pdb$JobDir, "MutationsData/", Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".pdb_", Pdb$Mode, sep = ""))
-      system(paste("rm -R ", Pdb$JobDir, Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".done/", sep = ""))
-      system(paste("cd ", Pdb$JobDir, " ; rm *pdb", sep = ""))
+      system(paste("bash -c '", "rm -R ", Pdb$JobDir, Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".done/", "'", sep = ""))
+      system(paste("bash -c '", "cd ", Pdb$JobDir, " ; rm *pdb", "'", sep = ""))
     }
   }
   else if(Method == "modeller"){
@@ -918,10 +918,10 @@ mutate_res <- function(Pdb, Resno, Chain, Split = TRUE, Method = "threading"){
     }
     pos <- as.numeric(SeqGap[SeqGap[, 2] == Resno, 3])
     
-    system(paste("cp ", Pdb$scriptsDir, "/align2d.py ", Pdb$JobDir, sep = ""))
-    system(paste("cp ", Pdb$scriptsDir, "/make_ali.py ", Pdb$JobDir, sep = ""))
-    system(paste("cp ", Pdb$scriptsDir, "/model-single.py ", Pdb$JobDir, sep = ""))
-    system(paste("cp ", Pdb$PdbPath," ", Pdb$JobDir, sep = ""))
+    system(paste("bash -c '", "cp ", Pdb$scriptsDir, "/align2d.py ", Pdb$JobDir, "'", sep = ""))
+    system(paste("bash -c '", "cp ", Pdb$scriptsDir, "/make_ali.py ", Pdb$JobDir, "'", sep = ""))
+    system(paste("bash -c '", "cp ", Pdb$scriptsDir, "/model-single.py ", Pdb$JobDir, "'", sep = ""))
+    system(paste("bash -c '", "cp ", Pdb$PdbPath," ", Pdb$JobDir, "'", sep = ""))
 
     for (AA in AAvector){
       cat("\n-----------------------------Getting variant ", AA, "-----------------------------\n")
@@ -933,13 +933,13 @@ mutate_res <- function(Pdb, Resno, Chain, Split = TRUE, Method = "threading"){
       }
       
       cat("-----------------------------Aligning-----------------------------\n")
-      system(paste("cd ", Pdb$JobDir, " ;python3 make_ali.py Modelo", sep = ""))
-      if(Split) system(paste("cd ", Pdb$JobDir, " ;python3 align2d.py ", Pdb$PdbBase, " Modelo ", Chain, sep = ""))
+      system(paste("bash -c '", "cd ", Pdb$JobDir, " ;python3 make_ali.py Modelo", "'", sep = ""))
+      if(Split) system(paste("bash -c '", "cd ", Pdb$JobDir, " ;python3 align2d.py ", Pdb$PdbBase, " Modelo ", Chain, "'", sep = ""))
   
       cat("-----------------------------Modeling-----------------------------\n")
-      system(paste("cd ", Pdb$JobDir, " ;python3 model-single.py ", Pdb$PdbBase, " Modelo", sep = ""))
-      system(paste("cd ", Pdb$JobDir, " ;mv Modelo.B99990001.pdb ", Pdb$JobDir, Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".pdb", sep = ""))
-      system(paste("cd ", Pdb$JobDir, " ;rm *D00000001 *ini *rsr *sch *V99990001 *ali *pap *fa"))
+      system(paste("bash -c '", "cd ", Pdb$JobDir, " ;python3 model-single.py ", Pdb$PdbBase, " Modelo", "'", sep = ""))
+      system(paste("bash -c '", "cd ", Pdb$JobDir, " ;mv Modelo.B99990001.pdb ", Pdb$JobDir, Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".pdb", "'", sep = ""))
+      system(paste("bash -c '", "cd ", Pdb$JobDir, " ;rm *D00000001 *ini *rsr *sch *V99990001 *ali *pap *fa", "'", sep=""))
       
       cat("----------------------------Calculating frustration-----------------------------\n")
       calculate_frustration(PdbFile = paste(Pdb$JobDir, Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".pdb", sep = ""),
@@ -947,15 +947,15 @@ mutate_res <- function(Pdb, Resno, Chain, Split = TRUE, Method = "threading"){
       
       cat("----------------------------Storing-----------------------------\n")
       if(Pdb$Mode == "singleresidue"){
-        system(paste("mv ", Pdb$JobDir, Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".done/FrustrationData/", Pdb$PdbBase,
-                     "_", Resno, "_", AA, "_", Chain, ".pdb_singleresidue ", Pdb$JobDir, "MutationsData/", sep = ""))
+        system(paste("bash -c '", "mv ", Pdb$JobDir, Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".done/FrustrationData/", Pdb$PdbBase,
+                     "_", Resno, "_", AA, "_", Chain, ".pdb_singleresidue ", Pdb$JobDir, "MutationsData/", "'", sep = ""))
         frustraTable <- read.table(paste(Pdb$JobDir, "MutationsData/", Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".pdb_singleresidue", sep = ""),
                                    header = T, colClasses = colClasses)
         frustraTable <- frustraTable[frustraTable$Res == pos, c(1, 2, 4, 8)]
         write(paste(frustraTable[, 1], frustraTable[, 2], frustraTable[, 3], frustraTable[, 4]), file = FrustraMutFile, append = TRUE)
       }else if(Pdb$Mode == "configurational" | Pdb$Mode == "mutational"){
-        system(paste("mv ", Pdb$JobDir, Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".done/FrustrationData/", Pdb$PdbBase,
-                     "_", Resno, "_", AA, "_", Chain, ".pdb_", Pdb$Mode, " ", Pdb$JobDir, "MutationsData/", sep = ""))
+        system(paste("bash -c '", "mv ", Pdb$JobDir, Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".done/FrustrationData/", Pdb$PdbBase,
+                     "_", Resno, "_", AA, "_", Chain, ".pdb_", Pdb$Mode, " ", Pdb$JobDir, "MutationsData/", "'", sep = ""))
         frustraTable <- read.table(paste(Pdb$JobDir, "MutationsData/", Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".pdb_", Pdb$Mode, sep = ""),
                                    header = T, colClasses = colClasses)
         frustraTable <- frustraTable[frustraTable$Res1 == pos |
@@ -968,11 +968,11 @@ mutate_res <- function(Pdb, Resno, Chain, Split = TRUE, Method = "threading"){
       
       #Unnecessary files are removed
       file.remove(paste(Pdb$JobDir,"MutationsData/",Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".pdb_", Pdb$Mode, sep=""))
-      system(paste("rm -R ", Pdb$JobDir, Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".done/", sep=""))
-      system(paste("cd ", Pdb$JobDir, " ; rm ",Pdb$PdbBase,"_*", sep = ""))
+      system(paste("bash -c '", "rm -R ", Pdb$JobDir, Pdb$PdbBase, "_", Resno, "_", AA, "_", Chain, ".done/", "'", sep=""))
+      system(paste("bash -c '", "cd ", Pdb$JobDir, " ; rm ",Pdb$PdbBase,"_*", "'", sep = ""))
       
     }
-    system(paste("cd ", Pdb$JobDir, " ; rm *pdb seqs.fasta *py", sep = ""))
+    system(paste("bash -c '", "cd ", Pdb$JobDir, " ; rm *pdb seqs.fasta *py", "'", sep = ""))
     
     cat("----------------------------Renumbering-----------------------------\n")
     if(Pdb$Mode == "singleresidue"){
